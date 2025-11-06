@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Виртуальный помощник{% endblock %}
+
+{% block content %}
+<div class="chat-container">
+    <div id="chat-window" class="chat-window"></div>
+    <div class="chat-input-container">
+        <input type="text" id="chat-input" placeholder="Введите сообщение..." autocomplete="off">
+        <button id="send-btn">Отправить</button>
+    </div>
+</div>
+{% endblock %}
+
+<script src="{{ url_for('static', path='/js/assistant.js') }}"></script>

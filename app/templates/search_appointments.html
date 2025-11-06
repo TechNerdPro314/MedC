@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Поиск записей{% endblock %}
+
+{% block content %}
+<h1>Поиск записей по пациенту</h1>
+
+<form action="/search/appointments" method="post">
+    <label for="full_name">Введите ФИО пациента:</label>
+    <input type="text" id="full_name" name="full_name" required>
+    <button type="submit">Найти</button>
+</form>
+
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% endif %}
+
+{% if appointments %}
+<h2>Найденные записи</h2>
+<table border="1">
+    <tr>
+        <th>ФИО пациента</th>
+        <th>Телефон пациента</th>
+        <th>ФИО врача</th>
+        <th>Кабинет</th>
+        <th>Место работы</th>
+        <th>Телефон врача</th>
+        <th>Дата приёма</th>
+        <th>Время приёма</th>
+        <th>Оказываемая услуга</th>
+        <th>Статус</th>
+        <th>Действие</th>
+        <th>Лекарства</th>
+    </tr>
+    {% for appointment in appointments %}
+    <tr>
+        <td>{{ appointment.patient.last_name }} {{ appointment.patient.first_name }} {{ appointment.patient.patronymic }}</td>
+        <td>{{ appointment.patient.phone }}</td>
+        <td>{{ appointment.doctor.last_name }} {{ appointment.doctor.first_name }} {{ appointment.doctor.patronymic }}</td>
+        <td>{{ appointment.doctor.cabinet }}</td>
+        <td>{{ appointment.doctor.workplace }}</td>
+        <td>{{ appointment.doctor.phone }}</td>
+        <td>{{ appointment.appointment_day.strftime("%d.%m.%Y") }}</td>
+        <td>{{ appointment.appointment_time }}</td>
+        <td>{{ appointment.service }}</td>
+        <td id="status-{{ appointment.id }}">{{ appointment.status }}</td>
+        <td>
+            <button class="status-btn" data-id="{{ appointment.id }}" data-status="Оказана" {% if appointment.status != "Ожидание" %}disabled{% endif %}>Услуга оказана</button>
+            <button class="status-btn" data-id="{{ appointment.id }}" data-status="Не оказана" {% if appointment.status != "Ожидание" %}disabled{% endif %}>Услуга не оказана</button>
+        </td>
+        <td>
+            <a href="/medications/{{ appointment.id }}" class="medications-btn">Назначенные лекарства</a>
+            <td>
+                <a href="/patients/{{ appointment.patient.id }}/documents" class="medications-btn">Документы</a>
+              </td>
+                         
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endif %}
+
+<script src="{{ url_for('static', path='/js/update_status.js') }}"></script>
+
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Назначенные лекарства{% endblock %}
+
+{% block content %}
+<h1>Назначенные лекарства</h1>
+
+{% if error %}
+<p style="color: red;">{{ error }}</p>
+{% else %}
+<p><strong>Лечащий врач:</strong> {{ appointment.doctor.last_name }} {{ appointment.doctor.first_name }} {{ appointment.doctor.patronymic }}</p>
+<p><strong>Пациент:</strong> {{ appointment.patient.last_name }} {{ appointment.patient.first_name }} {{ appointment.patient.patronymic }}</p>
+<p><strong>Телефон пациента:</strong> {{ appointment.patient.phone }}</p>
+<p><strong>Дата приёма:</strong> {{ appointment.appointment_day.strftime("%d.%m.%Y") }}</p>
+<p><strong>Время приёма:</strong> {{ appointment.appointment_time }}</p>
+<p><strong>Услуга:</strong> {{ appointment.service }}</p>
+
+<h2>Лекарства</h2>
+{% if medications %}
+<table border="1">
+    <tr>
+        <th>Название</th>
+        <th>Дозировка</th>
+    </tr>
+    {% for med in medications %}
+    <tr>
+        <td>{{ med.medication_name }}</td>
+        <td>{{ med.dosage }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>Нет назначенных лекарств.</p>
+{% endif %}
+
+<!-- Кнопка для генерации PDF -->
+<a href="/generate_pdf/{{ appointment.id }}" target="_blank">
+    <button>Распечатать</button>
+</a>
+
+{% endif %}
+
+<a href="/search/appointments">Вернуться к записям</a>
+
+{% endblock %}

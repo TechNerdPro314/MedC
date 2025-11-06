@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Документы пациента{% endblock %}
+
+{% block content %}
+<h2>Документы: {{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}</h2>
+
+<form action="/patients/{{ patient.id }}/documents" method="post" enctype="multipart/form-data" style="margin-bottom: 20px;">
+    <label>Выберите файл:</label>
+    <input type="file" name="file" required>
+
+    <label>Тип документа:</label>
+    <select name="category" required>
+        <option value="Анализы">Анализы</option>
+        <option value="УЗИ">УЗИ</option>
+        <option value="ЭКГ">ЭКГ</option>
+        <option value="Рентген">Рентген</option>
+        <option value="Прочее">Прочее</option>
+    </select>
+
+    <button type="submit">Загрузить</button>
+</form>
+
+{% if documents and documents|length > 0 %}
+    <h3>Загруженные документы:</h3>
+
+    {% for category, docs in documents|groupby('category') %}
+        <h4>{{ category }}</h4>
+        <ul>
+            {% for doc in docs %}
+                <li>
+                    <a href="/static/uploads/{{ patient.id }}/{{ doc.category }}/{{ doc.filename }}" target="_blank">
+                        {{ doc.original_name }}
+                    </a>
+                    ({{ doc.upload_date.strftime("%d.%m.%Y %H:%M") }})
+                    <form method="post" action="/patients/{{ patient.id }}/documents/{{ doc.id }}/delete" style="display:inline;">
+                        <button type="submit" onclick="return confirm('Удалить документ?');">Удалить</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+{% endif %}
+{% endblock %}

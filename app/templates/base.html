@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <title>{% block title %}Медицинская организация{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="/">Главная</a> |
+        <a href="/register/patient">Регистрация пациента</a> |
+        <a href="/register/doctor">Регистрация врача</a> |
+        <a href="/register/appointment">Запись на приём</a> |
+        <a href="/search/appointments">Поиск записей</a> |
+        <a href="/medications">Лекарства</a> |
+        <a href="/archive">Архив</a> |
+        <a href="/manage_appointments">Управление записями</a> |
+        <a href="/pharmacy">Аптечка</a> |
+
+
+        <!-- Блок даты и времени -->
+        <span id="datetime" class="datetime"></span>
+    </nav>
+    <hr>
+
+    {% block content %}{% endblock %}
+
+    <script src="{{ url_for('static', path='/js/datetime.js') }}"></script>
+</body>
+</html>

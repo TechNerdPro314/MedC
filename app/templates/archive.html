@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Архив записей{% endblock %}
+
+{% block content %}
+<h1>Архив записей</h1>
+
+<form method="get" action="/archive">
+    <label for="patient_id">Выберите пациента:</label>
+    <select id="patient_id" name="patient_id" required onchange="this.form.submit()">
+        <option value="0" {% if not selected_patient_id or selected_patient_id == 0 %}selected{% endif %}>Все пациенты</option>
+        {% for patient in patients %}
+            <option value="{{ patient.id }}" {% if selected_patient_id and patient.id == selected_patient_id %}selected{% endif %}>
+                {{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}
+            </option>
+        {% endfor %}
+    </select>
+    
+    <label for="sort">Сортировать по дате:</label>
+    <select id="sort" name="sort" onchange="this.form.submit()">
+         <option value="desc" {% if sort == 'desc' %}selected{% endif %}>Новые - Старые</option>
+         <option value="asc" {% if sort == 'asc' %}selected{% endif %}>Старые - Новые</option>
+    </select>
+</form>
+
+{% if appointments %}
+    <h2>Прошедшие записи</h2>
+    <table border="1" style="width:100%; border-collapse:collapse; margin-top:20px;">
+        <tr>
+            <th>Дата</th>
+            <th>Время</th>
+            <th>Пациент</th>
+            <th>Врач</th>
+            <th>Статус услуги</th>
+            <th>Лекарства</th>
+        </tr>
+        {% for appointment in appointments %}
+            <tr>
+                <td>{{ appointment.appointment_day.strftime('%d.%m.%Y') }}</td>
+                <td>{{ appointment.appointment_time }}</td>
+                <td>{{ appointment.patient.last_name }} {{ appointment.patient.first_name }} {{ appointment.patient.patronymic }}</td>
+                <td>{{ appointment.doctor.last_name }} {{ appointment.doctor.first_name }} {{ appointment.doctor.patronymic }}</td>
+                <td>{{ appointment.status }}</td>
+                <td>
+                    <a href="/medications/{{ appointment.id }}" class="medications-btn">Лекарства</a>
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+{% elif selected_patient_id %}
+    <p style="color:red; font-weight:bold;">Для выбранного пациента нет прошедших записей.</p>
+{% endif %}
+
+{% endblock %}

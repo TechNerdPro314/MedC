@@ -1,0 +1,21 @@
+        <!-- 02/04/2025 -->
+{% extends "base.html" %} 
+
+{% block title %}Диагноз и рекомендации{% endblock %}
+
+{% block content %}
+<h2>Назначение по приёму</h2>
+<p><strong>Пациент:</strong> {{ appointment.patient.last_name }} {{ appointment.patient.first_name }} {{ appointment.patient.patronymic }}</p>
+<p><strong>Врач:</strong> {{ appointment.doctor.last_name }} {{ appointment.doctor.first_name }} {{ appointment.doctor.patronymic }}</p>
+<p><strong>Услуга:</strong> {{ appointment.service }}</p>
+
+<form method="post">
+    <label for="diagnosis">Диагноз:</label>
+    <textarea id="diagnosis" name="diagnosis" required>{{ appointment.diagnosis or '' }}</textarea>
+
+    <label for="recommendations">Рекомендации:</label>
+    <textarea id="recommendations" name="recommendations" required>{{ appointment.recommendations or '' }}</textarea>
+
+    <button type="submit">Сохранить</button>
+</form>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Лекарства{% endblock %}
+
+{% block content %}
+<h1>Лекарства</h1>
+
+<label for="patient_id">Выберите пациента:</label>
+<select id="patient_id" name="patient_id" required onchange="loadAppointments()">
+    <option value="" selected disabled>Выберите пациента</option>
+    {% for patient in patients %}
+        <option value="{{ patient.id }}">{{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}</option>
+    {% endfor %}
+</select>
+
+<h2>Посещения врача</h2>
+<table border="1" id="appointments_table">
+    <tr>
+        <th>Врач</th>
+        <th>Специализация</th>
+        <th>Услуга</th>
+        <th>Дата</th>
+        <th>Время</th>
+        <th>Действие</th>
+    </tr>
+</table>
+
+<h2>Добавить лекарство</h2>
+<form id="medication_form" style="display: none;">
+    <label for="medication_name">Выберите лекарство:</label>
+    <select id="medication_name" name="medication_name" required>
+        <option value="" selected disabled>Выберите лекарство</option>
+        {% for med in medications_list %}
+            <option value="{{ med }}">{{ med }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="dosage">Дозировка:</label>
+    <input type="text" id="dosage" name="dosage" required>
+
+    <input type="hidden" id="selected_appointment_id" name="appointment_id">
+    <input type="hidden" id="selected_patient_id" name="patient_id">
+
+    <button type="submit">Добавить лекарство</button>
+</form>
+
+<script src="{{ url_for('static', path='/js/medications.js') }}"></script>
+
+{% endblock %}

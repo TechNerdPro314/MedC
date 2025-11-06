@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Управление записями{% endblock %}
+
+{% block content %}
+<h1>Управление записями</h1>
+
+<form method="get" action="/manage_appointments">
+    <label for="patient_id">Выберите пациента:</label>
+    <select id="patient_id" name="patient_id" onchange="this.form.submit()">
+        <option value="0" {% if not selected_patient_id or selected_patient_id == 0 %}selected{% endif %}>Все пациенты</option>
+        {% for patient in patients %}
+            <option value="{{ patient.id }}" {% if selected_patient_id and patient.id == selected_patient_id %}selected{% endif %}>
+                {{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
+{% if appointments %}
+    <table border="1" style="width:100%; border-collapse:collapse; margin-top:20px;" id="appointmentsTable">
+        <tr id="header">
+            <th>Дата</th>
+            <th>Время</th>
+            <th>Пациент</th>
+            <th>Врач</th>
+            <th>Услуга</th>
+            <th>Статус</th>
+            <th>Действия</th>
+        </tr>
+        {% for appointment in appointments %}
+        <tr id="row-{{ appointment.id }}">
+            <td>
+                {% if appointment.appointment_day %}
+                    {{ appointment.appointment_day.strftime('%d.%m.%Y') }}
+                {% else %}
+                    -
+                {% endif %}
+            </td>
+            <td>{{ appointment.appointment_time }}</td>
+            <td>{{ appointment.patient.last_name }} {{ appointment.patient.first_name }} {{ appointment.patient.patronymic }}</td>
+            <td>{{ appointment.doctor.last_name }} {{ appointment.doctor.first_name }} {{ appointment.doctor.patronymic }}</td>
+            <td>{{ appointment.service }}</td>
+            <td id="status-{{ appointment.id }}">{{ appointment.status }}</td>
+            <td>
+                <button class="status-btn" data-id="{{ appointment.id }}" data-status="Оказана">Услуга оказана</button>
+                <button class="status-btn" data-id="{{ appointment.id }}" data-status="Отменено">Отменить услугу</button>
+                <a href="/appointments/{{ appointment.id }}/diagnosis">
+                    <button class="status-btn" style="background-color: #6c757d; margin-top: 5px;">
+            Диагноз
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+{% else %}
+    <p>Нет записей.</p>
+{% endif %}
+
+<!-- Подключаем внешний JS для обновления статуса -->
+<script src="{{ url_for('static', path='/js/update_appointment.js') }}"></script>
+{% endblock %}

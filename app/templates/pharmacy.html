@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Аптечка{% endblock %}
+
+{% block content %}
+<h2>Склад лекарств</h2>
+
+<!-- Поиск по названию -->
+<form method="get" action="/pharmacy" style="margin-bottom: 20px;">
+    <input type="text" name="search" placeholder="Поиск по названию..." value="{{ request.query_params.get('search', '') }}">
+    <button type="submit">Найти</button>
+</form>
+
+<!-- Форма добавления препарата -->
+<form method="post" action="/pharmacy/add" style="margin-bottom: 30px;">
+    <label for="name">Название:</label>
+    <select name="name" required>
+        {% for med in medications_list %}
+            <option value="{{ med }}">{{ med }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="dosage">Дозировка:</label>
+    <input type="text" name="dosage" placeholder="например, 500 мг" required>
+
+    <label for="instruction">Инструкция:</label>
+    <input type="text" name="instruction" placeholder="например, после еды" required>
+
+    <label for="quantity">Количество:</label>
+    <input type="number" name="quantity" min="0" required>
+
+    <button type="submit">Добавить препарат</button>
+</form>
+
+<!-- Таблица препаратов -->
+<h3 style="margin-bottom: 10px;">Текущие препараты:</h3>
+<table border="1" style="width: 100%; border-collapse: collapse;">
+    <thead>
+        <tr>
+            <th>Название</th>
+            <th>Дозировка</th>
+            <th>Инструкция</th>
+            <th>Остаток</th>
+            <th>Пополнить</th>
+            <th>Удалить</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for drug in drugs %}
+        <tr>
+            <td>{{ drug.name }}</td>
+            <td>{{ drug.dosage }}</td>
+            <td>{{ drug.instruction }}</td>
+            {% set color = "green" %}
+            {% if drug.quantity == 0 %}
+                {% set color = "red" %}
+            {% elif drug.quantity <= 5 %}
+                {% set color = "orange" %}
+            {% endif %}
+            
+            <td style="color: {{ color }};">{{ drug.quantity }}</td>
+            
+            </td>
+            <td>
+                <form method="post" action="/pharmacy/restock/{{ drug.id }}" style="display: flex; gap: 5px;">
+                    <input type="number" name="quantity" min="1" required style="width: 60px;">
+                    <button type="submit">+</button>
+                </form>
+            </td>
+            <td>
+                <form method="post" action="/pharmacy/delete/{{ drug.id }}" onsubmit="return confirm('Удалить препарат?')">
+                    <button type="submit">Удалить</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
