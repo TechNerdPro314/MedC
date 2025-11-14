@@ -1,5 +1,3 @@
-# app/models.py
-
 from datetime import datetime
 
 from sqlalchemy import (  # Добавили Text
@@ -14,12 +12,6 @@ from sqlalchemy import (  # Добавили Text
 from sqlalchemy.orm import relationship
 
 from .database import Base
-
-# Рекомендуемые длины для полей
-# Имена, фамилии, email: 100
-# Телефоны, полисы, статусы: 50
-# Длинные адреса, названия: 255
-# Текстовые описания, рекомендации: Text
 
 
 class Patient(Base):

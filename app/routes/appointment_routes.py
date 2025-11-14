@@ -1,15 +1,12 @@
-# app/routes/appointment_routes.py
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi import APIRouter, Depends, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-
+from datetime import datetime
 from .. import models, schemas
-from ..data.services import services_by_specialization
+from ..crud import appointment_crud, patient_crud
 from ..database import SessionLocal, engine
+from ..data.services import services_by_specialization
 
 models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
@@ -39,7 +36,6 @@ def register_appointment_form(request: Request, db: Session = Depends(get_db)):
     )
 
 
-# app/routes/appointment_routes.py
 @router.post("/register/appointment", response_class=HTMLResponse)
 def register_appointment(
     request: Request,
@@ -52,16 +48,14 @@ def register_appointment(
 ):
     appointment_date = datetime.strptime(appointment_day, "%Y-%m-%d").date()
 
-    db_appointment = models.Appointment(
+    appointment_crud.create_appointment(
+        db=db,
         patient_id=patient_id,
         doctor_id=doctor_id,
         service=service,
         appointment_day=appointment_date,
         appointment_time=appointment_time,
     )
-    db.add(db_appointment)
-    db.commit()
-    db.refresh(db_appointment)
 
     return RedirectResponse(url="/", status_code=302)
 
@@ -83,28 +77,24 @@ def search_appointments_page(request: Request):
 def search_appointments(
     request: Request, full_name: str = Form(...), db: Session = Depends(get_db)
 ):
-    # Разбиваем введённое ФИО на части
     name_parts = full_name.strip().split()
     if len(name_parts) < 2:
         return templates.TemplateResponse(
             "search_appointments.html",
             {
                 "request": request,
-                "error": "Введите полное ФИО пациента (Фамилия Имя Отчество)",
+                "error": "Введите как минимум Фамилию и Имя пациента",
                 "appointments": [],
                 "patient": None,
             },
         )
 
-    # Ищем пациента по ФИО
-    patient = (
-        db.query(models.Patient)
-        .filter(
-            models.Patient.last_name == name_parts[0],
-            models.Patient.first_name == name_parts[1],
-            models.Patient.patronymic == name_parts[2] if len(name_parts) > 2 else True,
-        )
-        .first()
+    last_name = name_parts[0]
+    first_name = name_parts[1]
+    patronymic = name_parts[2] if len(name_parts) > 2 else None
+
+    patient = patient_crud.get_patient_by_fullname(
+        db=db, last_name=last_name, first_name=first_name, patronymic=patronymic
     )
 
     if not patient:
@@ -118,12 +108,9 @@ def search_appointments(
             },
         )
 
-    # Получаем записи пациента к врачам
-    appointments = (
-        db.query(models.Appointment)
-        .join(models.Doctor)
-        .filter(models.Appointment.patient_id == patient.id)
-        .all()
+    # 2. Получаем записи пациента с помощью другой CRUD-функции
+    appointments = appointment_crud.get_appointments_by_patient_id(
+        db=db, patient_id=patient.id
     )
 
     return templates.TemplateResponse(
@@ -134,8 +121,8 @@ def search_appointments(
 
 @router.post("/update_status")
 def update_status(
-    appointment_id: int = Form(...),  # Теперь корректно принимаем ID
-    status: str = Form(...),  # Принимаем статус услуги
+    appointment_id: int = Form(...),
+    status: str = Form(...),
     db: Session = Depends(get_db),
 ):
     appointment = (
@@ -215,7 +202,6 @@ def reschedule_appointment(
     )
 
 
-# Страница управления записями (админская)
 @router.get("/manage_appointments", response_class=HTMLResponse)
 def manage_appointments(
     request: Request, patient_id: int = 0, db: Session = Depends(get_db)
@@ -240,7 +226,6 @@ def manage_appointments(
     )
 
 
-# <--- Новый столбец 02.04.2025
 @router.get("/appointments/{appointment_id}/diagnosis")
 def add_diagnosis_form(
     appointment_id: int, request: Request, db: Session = Depends(get_db)
@@ -251,9 +236,6 @@ def add_diagnosis_form(
     return templates.TemplateResponse(
         "add_diagnosis.html", {"request": request, "appointment": appointment}
     )
-
-
-# <--- Новый столбец 02.04.2025
 
 
 @router.post("/appointments/{appointment_id}/diagnosis")

@@ -1,13 +1,13 @@
 # app/routes/doctor_routes.py
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-
 from .. import models, schemas
-from ..data.cabinets import cabinets
-from ..data.specializations import specializations
+from ..crud import doctor_crud
 from ..database import SessionLocal, engine
+from ..data.specializations import specializations
+from ..data.cabinets import cabinets
 
 models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
@@ -25,7 +25,6 @@ def get_db():
 # HTML-эндпоинты для регистрации врача
 @router.get("/register/doctor", response_class=HTMLResponse)
 def register_doctor_form(request: Request):
-    # Возможные места работы
     workplaces = ["Адрес 1", "Адрес 2", "Адрес 3"]
     return templates.TemplateResponse(
         "register_doctor.html",
@@ -52,8 +51,6 @@ def register_doctor(
     workplace: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    # Создаём объект схемы – возраст вычисляется автоматически,
-    # дата рождения приводится к формату ДД.ММ.ГГГГ
     doctor_data = schemas.DoctorCreate(
         last_name=last_name,
         first_name=first_name,
@@ -65,14 +62,12 @@ def register_doctor(
         email=email,
         workplace=workplace,
     )
-    db_doctor = models.Doctor(**doctor_data.dict())
-    db.add(db_doctor)
-    db.commit()
-    db.refresh(db_doctor)
+
+    doctor_crud.create_doctor(db=db, doctor=doctor_data)
+
     return RedirectResponse(url="/", status_code=302)
 
 
-# API-эндпоинты для работы с врачами
 @router.post("/api/doctors", response_model=schemas.DoctorCreate)
 def create_doctor_api(doctor: schemas.DoctorCreate, db: Session = Depends(get_db)):
     db_doctor = models.Doctor(**doctor.dict())

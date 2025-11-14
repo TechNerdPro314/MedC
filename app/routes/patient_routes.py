@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-
+from ..crud import patient_crud
 from .. import models, schemas
 from ..database import SessionLocal, engine
 
@@ -42,7 +42,7 @@ def register_patient(
     email: str = Form(...),
     db: Session = Depends(get_db),
 ):
-    # Создаём объект схемы – здесь будет автоматически вычислен возраст и формат даты приведён к ДД.ММ.ГГГГ
+    # 1. Валидация данных остается здесь, это работа для маршрута
     patient_data = schemas.PatientCreate(
         last_name=last_name,
         first_name=first_name,
@@ -54,10 +54,11 @@ def register_patient(
         insurance_policy=insurance_policy,
         email=email,
     )
-    db_patient = models.Patient(**patient_data.dict())
-    db.add(db_patient)
-    db.commit()
-    db.refresh(db_patient)
+
+    # 2. Вместо прямой работы с БД, просто вызываем нашу CRUD-функцию
+    patient_crud.create_patient(db=db, patient=patient_data)
+
+    # 3. Возвращаем ответ
     return RedirectResponse(url="/", status_code=302)
 
 
