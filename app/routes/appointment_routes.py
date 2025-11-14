@@ -1,15 +1,22 @@
+# app/routes/appointment_routes.py
 from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime
-from .. import models, schemas
+
+# --- ДОБАВЛЕНЫ ИМПОРТЫ auth и schemas ---
+from .. import models, schemas, auth
 from ..crud import appointment_crud, patient_crud
 from ..database import SessionLocal, engine
 from ..data.services import services_by_specialization
 
 models.Base.metadata.create_all(bind=engine)
-router = APIRouter()
+# --- ПРИМЕНЯЕМ ЗАЩИТУ КО ВСЕМУ РОУТЕРУ СРАЗУ ---
+# Теперь не нужно писать Depends в каждую функцию этого файла.
+# Любой запрос к /register/appointment, /search/appointments и т.д.
+# будет требовать, чтобы пользователь был авторизован.
+router = APIRouter(dependencies=[Depends(auth.get_current_user)])
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -47,7 +54,6 @@ def register_appointment(
     db: Session = Depends(get_db),
 ):
     appointment_date = datetime.strptime(appointment_day, "%Y-%m-%d").date()
-
     appointment_crud.create_appointment(
         db=db,
         patient_id=patient_id,
@@ -56,7 +62,6 @@ def register_appointment(
         appointment_day=appointment_date,
         appointment_time=appointment_time,
     )
-
     return RedirectResponse(url="/", status_code=302)
 
 
@@ -108,7 +113,6 @@ def search_appointments(
             },
         )
 
-    # 2. Получаем записи пациента с помощью другой CRUD-функции
     appointments = appointment_crud.get_appointments_by_patient_id(
         db=db, patient_id=patient.id
     )
@@ -119,7 +123,12 @@ def search_appointments(
     )
 
 
-@router.post("/update_status")
+# --- УПРАВЛЕНИЕ ЗАПИСЯМИ - ТОЛЬКО ДЛЯ АДМИНОВ ---
+# Здесь мы добавляем дополнительную, более строгую зависимость
+admin_dependency = Depends(auth.get_current_admin_user)
+
+
+@router.post("/update_status", dependencies=[admin_dependency])
 def update_status(
     appointment_id: int = Form(...),
     status: str = Form(...),
@@ -130,17 +139,18 @@ def update_status(
         .filter(models.Appointment.id == appointment_id)
         .first()
     )
-
     if not appointment:
         return JSONResponse(content={"error": "Запись не найдена"}, status_code=404)
-
     appointment.status = status
     db.commit()
-
     return JSONResponse(content={"message": "Статус обновлён", "status": status})
 
 
-@router.post("/appointments/{appointment_id}/cancel", response_class=JSONResponse)
+@router.post(
+    "/appointments/{appointment_id}/cancel",
+    response_class=JSONResponse,
+    dependencies=[admin_dependency],
+)
 def cancel_appointment(
     appointment_id: int, reason: str = Form(...), db: Session = Depends(get_db)
 ):
@@ -166,7 +176,11 @@ def cancel_appointment(
     )
 
 
-@router.post("/appointments/{appointment_id}/reschedule", response_class=JSONResponse)
+@router.post(
+    "/appointments/{appointment_id}/reschedule",
+    response_class=JSONResponse,
+    dependencies=[admin_dependency],
+)
 def reschedule_appointment(
     appointment_id: int,
     new_date: str = Form(...),
@@ -202,7 +216,9 @@ def reschedule_appointment(
     )
 
 
-@router.get("/manage_appointments", response_class=HTMLResponse)
+@router.get(
+    "/manage_appointments", response_class=HTMLResponse, dependencies=[admin_dependency]
+)
 def manage_appointments(
     request: Request, patient_id: int = 0, db: Session = Depends(get_db)
 ):
@@ -226,7 +242,7 @@ def manage_appointments(
     )
 
 
-@router.get("/appointments/{appointment_id}/diagnosis")
+@router.get("/appointments/{appointment_id}/diagnosis", dependencies=[admin_dependency])
 def add_diagnosis_form(
     appointment_id: int, request: Request, db: Session = Depends(get_db)
 ):
@@ -238,7 +254,9 @@ def add_diagnosis_form(
     )
 
 
-@router.post("/appointments/{appointment_id}/diagnosis")
+@router.post(
+    "/appointments/{appointment_id}/diagnosis", dependencies=[admin_dependency]
+)
 def add_diagnosis(
     appointment_id: int,
     diagnosis: str = Form(...),

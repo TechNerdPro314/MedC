@@ -1,16 +1,17 @@
-import os
-import shutil
-from datetime import datetime
-from .. import auth
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+# app/routes/document_routes.py
+from fastapi import APIRouter, UploadFile, Form, Request, Depends, HTTPException, File
 from fastapi.responses import RedirectResponse
-from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from datetime import datetime
+import os, shutil
 
-from app import models
-from app.database import get_db
+# --- ДОБАВЛЕНЫ ИМПОРТЫ auth и schemas ---
+from .. import models, auth, schemas
+from ..database import get_db
+from fastapi.templating import Jinja2Templates
 
-router = APIRouter()
+# --- ПРИМЕНЯЕМ ЗАЩИТУ КО ВСЕМУ РОУТЕРУ ---
+router = APIRouter(dependencies=[Depends(auth.get_current_user)])
 templates = Jinja2Templates(directory="app/templates")
 
 UPLOAD_DIR = "app/static/uploads"
@@ -19,6 +20,9 @@ UPLOAD_DIR = "app/static/uploads"
 @router.get("/patients/{patient_id}/documents")
 def show_documents(patient_id: int, request: Request, db: Session = Depends(get_db)):
     patient = db.query(models.Patient).filter_by(id=patient_id).first()
+    if not patient:
+        raise HTTPException(status_code=404, detail="Пациент не найден")
+
     documents = db.query(models.PatientDocument).filter_by(patient_id=patient_id).all()
     return templates.TemplateResponse(
         "patient_documents.html",
@@ -64,7 +68,10 @@ def delete_document(patient_id: int, doc_id: int, db: Session = Depends(get_db))
     if not document:
         raise HTTPException(status_code=404, detail="Документ не найден")
 
-    file_path = os.path.join(UPLOAD_DIR, str(patient_id), document.filename)
+    # Формируем путь к файлу с учетом категории
+    file_path = os.path.join(
+        UPLOAD_DIR, str(patient_id), document.category, document.filename
+    )
     if os.path.exists(file_path):
         os.remove(file_path)
 

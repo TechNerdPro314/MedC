@@ -1,15 +1,12 @@
-# app/routes/patient_routes.py
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from .. import models, schemas, auth
 from ..crud import patient_crud
-from .. import models, schemas
 from ..database import SessionLocal, engine
 
-# Создаём таблицы, если они ещё не созданы
 models.Base.metadata.create_all(bind=engine)
-
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
@@ -41,8 +38,9 @@ def register_patient(
     insurance_policy: str = Form(...),
     email: str = Form(...),
     db: Session = Depends(get_db),
+    # --- ДОБАВЛЯЕМ ЗАЩИТУ АДМИНИСТРАТОРОМ ---
+    current_admin: schemas.User = Depends(auth.get_current_admin_user),
 ):
-    # 1. Валидация данных остается здесь, это работа для маршрута
     patient_data = schemas.PatientCreate(
         last_name=last_name,
         first_name=first_name,
@@ -54,25 +52,29 @@ def register_patient(
         insurance_policy=insurance_policy,
         email=email,
     )
-
-    # 2. Вместо прямой работы с БД, просто вызываем нашу CRUD-функцию
     patient_crud.create_patient(db=db, patient=patient_data)
-
-    # 3. Возвращаем ответ
     return RedirectResponse(url="/", status_code=302)
 
 
-# API-эндпоинты для работы с пациентами
+# API-эндпоинты для работы с пациентами (тоже защищаем)
 @router.post("/api/patients", response_model=schemas.PatientCreate)
-def create_patient_api(patient: schemas.PatientCreate, db: Session = Depends(get_db)):
-    db_patient = models.Patient(**patient.dict())
-    db.add(db_patient)
-    db.commit()
-    db.refresh(db_patient)
+def create_patient_api(
+    patient: schemas.PatientCreate,
+    db: Session = Depends(get_db),
+    # --- ДОБАВЛЯЕМ ЗАЩИТУ АДМИНИСТРАТОРОМ ---
+    current_admin: schemas.User = Depends(auth.get_current_admin_user),
+):
+    db_patient = patient_crud.create_patient(db=db, patient=patient)
     return patient
 
 
 @router.get("/api/patients", response_model=list[schemas.PatientCreate])
-def read_patients_api(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+def read_patients_api(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(auth.get_current_user),
+):
     patients = db.query(models.Patient).offset(skip).limit(limit).all()
-    return patients
+    # Pydantic V2 требует явного преобразования
+    return [schemas.PatientCreate.model_validate(p) for p in patients]

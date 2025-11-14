@@ -1,14 +1,16 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, Request
+# app/routes/archive_routes.py
+from fastapi import APIRouter, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from datetime import datetime
 
-from .. import models
+# --- ДОБАВЛЕНЫ ИМПОРТЫ auth и schemas ---
+from .. import models, auth, schemas
 from ..database import SessionLocal
 
-router = APIRouter()
+# --- ПРИМЕНЯЕМ ЗАЩИТУ КО ВСЕМУ РОУТЕРУ ---
+router = APIRouter(dependencies=[Depends(auth.get_current_user)])
 templates = Jinja2Templates(directory="app/templates")
 
 

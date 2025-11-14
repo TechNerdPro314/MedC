@@ -1,16 +1,15 @@
-from fastapi import APIRouter, Depends, Form, HTTPException, Request
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
+# app/routes/medication_routes.py
+import os
+from fastapi import APIRouter, Depends, Request, Form, HTTPException
+from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-
-from app.data.medications import medications_list
-
-from .. import models
-from ..data.medications import medications_list
+from .. import models, auth, schemas
 from ..database import SessionLocal
+from ..data.medications import medications_list
 from ..utils.generate_pdf import generate_medication_pdf
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(auth.get_current_user)])
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -30,7 +29,7 @@ def medications_page(request: Request, db: Session = Depends(get_db)):
         {
             "request": request,
             "patients": patients,
-            "medications_list": medications_list,  # Передаём список лекарств
+            "medications_list": medications_list,
         },
     )
 
@@ -71,7 +70,7 @@ def generate_pdf(appointment_id: int, db: Session = Depends(get_db)):
         .first()
     )
     if not appointment:
-        return {"error": "Запись не найдена"}
+        raise HTTPException(status_code=404, detail="Запись не найдена")
 
     patient = appointment.patient
     doctor = appointment.doctor
@@ -81,15 +80,17 @@ def generate_pdf(appointment_id: int, db: Session = Depends(get_db)):
         .all()
     )
 
-    # Генерация PDF
     pdf_path = generate_medication_pdf(patient, doctor, appointment, medications)
-
     return FileResponse(
-        path=pdf_path, filename=pdf_path.split("/")[-1], media_type="application/pdf"
+        path=pdf_path, filename=os.path.basename(pdf_path), media_type="application/pdf"
     )
 
 
-@router.post("/add_medication")
+# --- УПРАВЛЕНИЕ АПТЕКОЙ И НАЗНАЧЕНИЯМИ - ТОЛЬКО ДЛЯ АДМИНОВ ---
+admin_dependency = Depends(auth.get_current_admin_user)
+
+
+@router.post("/add_medication", dependencies=[admin_dependency])
 def add_medication(
     patient_id: int = Form(...),
     appointment_id: int = Form(...),
@@ -104,9 +105,7 @@ def add_medication(
     if drug.quantity <= 0:
         return JSONResponse(content={"error": "Нет в наличии"}, status_code=400)
 
-    # Списание
     drug.quantity -= 1
-
     medication = models.Medication(
         patient_id=patient_id,
         appointment_id=appointment_id,
@@ -115,7 +114,6 @@ def add_medication(
     )
     db.add(medication)
     db.commit()
-
     return JSONResponse(content={"message": "Лекарство назначено и списано"})
 
 
@@ -126,7 +124,6 @@ def get_appointments(patient_id: int, db: Session = Depends(get_db)):
         .filter(models.Appointment.patient_id == patient_id)
         .all()
     )
-
     result = [
         {
             "id": a.id,
@@ -138,11 +135,10 @@ def get_appointments(patient_id: int, db: Session = Depends(get_db)):
         }
         for a in appointments
     ]
-
     return JSONResponse(content=result)
 
 
-@router.get("/pharmacy", response_class=HTMLResponse)
+@router.get("/pharmacy", response_class=HTMLResponse, dependencies=[admin_dependency])
 def view_pharmacy(request: Request, search: str = "", db: Session = Depends(get_db)):
     query = db.query(models.PharmacyDrug)
     if search:
@@ -154,7 +150,7 @@ def view_pharmacy(request: Request, search: str = "", db: Session = Depends(get_
     )
 
 
-@router.post("/pharmacy/add")
+@router.post("/pharmacy/add", dependencies=[admin_dependency])
 def add_pharmacy_drug(
     name: str = Form(...),
     dosage: str = Form(...),
@@ -170,18 +166,17 @@ def add_pharmacy_drug(
     return RedirectResponse(url="/pharmacy", status_code=303)
 
 
-@router.post("/pharmacy/delete/{drug_id}")
+@router.post("/pharmacy/delete/{drug_id}", dependencies=[admin_dependency])
 def delete_pharmacy_drug(drug_id: int, db: Session = Depends(get_db)):
     drug = db.query(models.PharmacyDrug).filter_by(id=drug_id).first()
     if not drug:
         raise HTTPException(status_code=404, detail="Препарат не найден")
-
     db.delete(drug)
     db.commit()
     return RedirectResponse(url="/pharmacy", status_code=303)
 
 
-@router.post("/pharmacy/restock/{drug_id}")
+@router.post("/pharmacy/restock/{drug_id}", dependencies=[admin_dependency])
 def restock(drug_id: int, quantity: int = Form(...), db: Session = Depends(get_db)):
     drug = db.query(models.PharmacyDrug).filter_by(id=drug_id).first()
     if drug:
