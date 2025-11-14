@@ -13,3 +13,9 @@ reportlab
 
 # Для работы с .env файлами (понадобится на следующем шаге)
 python-dotenv
+
+pydantic[email]
+
+python-multipart
+
+PyMySQL
