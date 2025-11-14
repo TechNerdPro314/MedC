@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from .. import models, schemas
+from .. import models, schemas, auth
 from ..crud import doctor_crud
 from ..database import SessionLocal, engine
 from ..data.specializations import specializations
@@ -50,6 +50,7 @@ def register_doctor(
     email: str = Form(...),
     workplace: str = Form(...),
     db: Session = Depends(get_db),
+    current_admin: schemas.User = Depends(auth.get_current_admin_user),
 ):
     doctor_data = schemas.DoctorCreate(
         last_name=last_name,

@@ -5,6 +5,7 @@ from .document_routes import router as document_router
 from .html_routes import router as html_router
 from .medication_routes import router as medication_router
 from .patient_routes import router as patient_router
+from .auth_routes import router as auth_router
 
 __all__ = [
     "patient_router",
@@ -14,4 +15,5 @@ __all__ = [
     "medication_router",
     "archive_router",
     "document_router",
+    "auth_router",
 ]

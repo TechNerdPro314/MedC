@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from sqlalchemy import (  # Добавили Text
     Column,
     Date,
@@ -8,9 +7,9 @@ from sqlalchemy import (  # Добавили Text
     Integer,
     String,
     Text,
+    Boolean,
 )
 from sqlalchemy.orm import relationship
-
 from .database import Base
 
 
@@ -108,3 +107,11 @@ class PharmacyDrug(Base):
 
     def __repr__(self):
         return f"{self.name} ({self.dosage})"
+
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(100), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(255), nullable=False)
+    is_admin = Column(Boolean, default=False)

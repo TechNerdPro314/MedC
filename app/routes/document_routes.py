@@ -1,7 +1,7 @@
 import os
 import shutil
 from datetime import datetime
-
+from .. import auth
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates

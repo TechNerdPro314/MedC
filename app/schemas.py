@@ -114,3 +114,30 @@ class AppointmentCreate(BaseModel):
     service: str  # Теперь нужно передавать услугу
     appointment_day: date
     appointment_time: str
+
+
+class UserBase(BaseModel):
+    username: str
+
+
+class UserCreate(UserBase):
+    password: str
+    is_admin: Optional[bool] = False
+
+
+class User(UserBase):
+    id: int
+    is_admin: bool
+
+    class Config:
+        orm_mode = True  # В старых версиях Pydantic, сейчас from_attributes = True
+
+
+# Схема для токена
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    username: Optional[str] = None

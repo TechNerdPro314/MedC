@@ -9,6 +9,7 @@ from .routes import (
     html_router,
     medication_router,
     patient_router,
+    auth_router,
 )
 
 app = FastAPI(title="Медицинская организация")
@@ -23,3 +24,4 @@ app.include_router(appointment_router)
 app.include_router(medication_router)
 app.include_router(archive_router)
 app.include_router(document_router)
+app.include_router(auth_router)
