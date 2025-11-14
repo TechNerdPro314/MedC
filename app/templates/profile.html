@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Личный кабинет{% endblock %}
+
+{% block content %}
+<h1>Личный кабинет, {{ patient.first_name }}!</h1>
+
+<div class="profile-info">
+    <h3>Ваши данные</h3>
+    <p><strong>ФИО:</strong> {{ patient.last_name }} {{ patient.first_name }} {{ patient.patronymic }}</p>
+    <p><strong>Дата рождения:</strong> {{ patient.date_of_birth }}</p>
+    <p><strong>Телефон:</strong> {{ patient.phone }}</p>
+    <p><strong>Email:</strong> {{ patient.email }}</p>
+</div>
+
+<hr>
+
+<h2>Предстоящие записи</h2>
+{% if upcoming_appointments %}
+<table>
+    <tr>
+        <th>Дата</th>
+        <th>Время</th>
+        <th>Врач</th>
+        <th>Специализация</th>
+        <th>Услуга</th>
+        <th>Статус</th>
+    </tr>
+    {% for app in upcoming_appointments %}
+    <tr>
+        <td>{{ app.appointment_day.strftime('%d.%m.%Y') }}</td>
+        <td>{{ app.appointment_time }}</td>
+        <td>{{ app.doctor.last_name }} {{ app.doctor.first_name[0] }}.{{ app.doctor.patronymic[0] }}.</td>
+        <td>{{ app.doctor.specialization }}</td>
+        <td>{{ app.service }}</td>
+        <td>{{ app.status }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>У вас нет предстоящих записей.</p>
+{% endif %}
+
+<hr>
+
+<h2>Прошедшие записи</h2>
+{% if past_appointments %}
+<table>
+    <tr>
+        <th>Дата</th>
+        <th>Время</th>
+        <th>Врач</th>
+        <th>Специализация</th>
+        <th>Услуга</th>
+        <th>Статус</th>
+    </tr>
+    {% for app in past_appointments %}
+    <tr>
+        <td>{{ app.appointment_day.strftime('%d.%m.%Y') }}</td>
+        <td>{{ app.appointment_time }}</td>
+        <td>{{ app.doctor.last_name }} {{ app.doctor.first_name[0] }}.{{ app.doctor.patronymic[0] }}.</td>
+        <td>{{ app.doctor.specialization }}</td>
+        <td>{{ app.service }}</td>
+        <td>{{ app.status }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>У вас нет прошедших записей.</p>
+{% endif %}
+
+{% endblock %}

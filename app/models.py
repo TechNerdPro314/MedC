@@ -1,21 +1,25 @@
-from datetime import datetime
-from sqlalchemy import (  # Добавили Text
+# app/models.py
+from sqlalchemy import (
     Column,
-    Date,
-    DateTime,
-    ForeignKey,
     Integer,
     String,
+    ForeignKey,
+    Date,
+    DateTime,
     Text,
     Boolean,
 )
 from sqlalchemy.orm import relationship
+from datetime import datetime
 from .database import Base
 
 
 class Patient(Base):
     __tablename__ = "patients"
     id = Column(Integer, primary_key=True, index=True)
+    # --- ДОБАВЛЕНО ПОЛЕ СВЯЗИ ---
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, unique=True)
+
     last_name = Column(String(100), index=True)
     first_name = Column(String(100), index=True)
     patronymic = Column(String(100), index=True)
@@ -26,6 +30,9 @@ class Patient(Base):
     phone = Column(String(50), index=True)
     insurance_policy = Column(String(50), index=True)
     email = Column(String(100), index=True)
+
+
+# ... (остальные модели Doctor, Appointment и т.д. без изменений) ...
 
 
 class Doctor(Base):
@@ -52,8 +59,8 @@ class Appointment(Base):
     appointment_day = Column(Date)
     appointment_time = Column(String(50))
     status = Column(String(50), default="Ожидание")
-    diagnosis = Column(Text)  # Используем Text для длинных описаний
-    recommendations = Column(Text)  # Используем Text для длинных описаний
+    diagnosis = Column(Text)
+    recommendations = Column(Text)
 
     patient = relationship("Patient")
     doctor = relationship("Doctor")

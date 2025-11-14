@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="utf-8">
     <title>{% block title %}Медицинская организация{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
 </head>
+
 <body>
     <nav>
         <a href="/">Главная</a> |
@@ -16,7 +18,7 @@
         <a href="/archive">Архив</a> |
         <a href="/manage_appointments">Управление записями</a> |
         <a href="/pharmacy">Аптечка</a> |
-
+        <a href="/me">Личный кабинет</a> |
 
         <!-- Блок даты и времени -->
         <span id="datetime" class="datetime"></span>
@@ -27,4 +29,5 @@
 
     <script src="{{ url_for('static', path='/js/datetime.js') }}"></script>
 </body>
+
 </html>

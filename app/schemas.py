@@ -19,6 +19,10 @@ class PatientCreate(BaseModel):
     email: EmailStr
     age: Optional[int] = None
 
+    # --- ДОБАВЛЕНЫ ПОЛЯ ДЛЯ СОЗДАНИЯ АККАУНТА ---
+    username: Optional[str] = None
+    password: Optional[str] = None
+
     @field_validator("phone")
     @classmethod
     def validate_phone(cls, value):
@@ -50,7 +54,6 @@ class PatientCreate(BaseModel):
             try:
                 dob = datetime.strptime(dob_str, "%d.%m.%Y")
             except ValueError:
-                # Если дата пришла в формате YYYY-MM-DD, парсим ее
                 dob = datetime.strptime(dob_str, "%Y-%m-%d")
 
             today = datetime.now()
@@ -60,8 +63,10 @@ class PatientCreate(BaseModel):
                 - ((today.month, today.day) < (dob.month, dob.day))
             )
             return age
-        # Не выбрасываем ошибку, а возвращаем None, если возраст не может быть вычислен
         return None
+
+
+# ... (DoctorCreate, AppointmentCreate и другие схемы без изменений) ...
 
 
 class DoctorCreate(BaseModel):
@@ -139,7 +144,6 @@ class UserCreate(UserBase):
 class User(UserBase):
     id: int
     is_admin: bool
-
     model_config = ConfigDict(from_attributes=True)
 
 
