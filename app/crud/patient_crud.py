@@ -1,5 +1,5 @@
+# app/crud/patient_crud.py
 from sqlalchemy.orm import Session
-
 from .. import models, schemas
 
 
@@ -7,19 +7,15 @@ def create_patient(db: Session, patient: schemas.PatientCreate):
     """
     Создает нового пациента в базе данных.
     """
-    # 1. Создаем объект модели SQLAlchemy из данных Pydantic схемы
-    db_patient = models.Patient(**patient.dict())
+    # Создаем объект модели SQLAlchemy из данных Pydantic схемы
+    db_patient = models.Patient(**patient.model_dump())
 
-    # 2. Добавляем объект в сессию (готовим к сохранению)
+    # Явно устанавливаем вычисленное значение возраста
+    db_patient.age = patient.age
+
     db.add(db_patient)
-
-    # 3. Сохраняем изменения в базе данных
     db.commit()
-
-    # 4. Обновляем объект, чтобы получить ID, присвоенный базой данных
     db.refresh(db_patient)
-
-    # 5. Возвращаем созданный объект пациента
     return db_patient
 
 

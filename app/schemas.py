@@ -1,13 +1,9 @@
 # app/schemas.py
-import re
-from datetime import date, datetime
+from pydantic import BaseModel, EmailStr, field_validator, ConfigDict
+from datetime import datetime, date
 from typing import Optional
+import re
 
-from pydantic import BaseModel, EmailStr, validator
-
-# Регулярное выражение для проверки номера телефона:
-# - может начинаться с "+" (необязательно)
-# - от 7 до 15 цифр
 phone_regex = re.compile(r"^\+?\d{7,15}$")
 
 
@@ -16,14 +12,15 @@ class PatientCreate(BaseModel):
     first_name: str
     patronymic: str
     gender: str
-    date_of_birth: str  # Допустимые форматы: "ДД.ММ.ГГГГ" или "YYYY-MM-DD"
+    date_of_birth: str
     address: str
     phone: str
     insurance_policy: str
     email: EmailStr
-    age: Optional[int] = None  # Вычисляется автоматически
+    age: Optional[int] = None
 
-    @validator("phone")
+    @field_validator("phone")
+    @classmethod
     def validate_phone(cls, value):
         if not phone_regex.match(value):
             raise ValueError(
@@ -31,7 +28,8 @@ class PatientCreate(BaseModel):
             )
         return value
 
-    @validator("date_of_birth")
+    @field_validator("date_of_birth")
+    @classmethod
     def validate_date_of_birth(cls, value):
         try:
             if "-" in value:
@@ -42,14 +40,19 @@ class PatientCreate(BaseModel):
             raise ValueError(
                 "Дата рождения должна быть в формате ДД.ММ.ГГГГ или YYYY-MM-DD"
             )
-        # Приводим дату к формату РФ: ДД.ММ.ГГГГ
         return dob.strftime("%d.%m.%Y")
 
-    @validator("age", always=True)
+    @field_validator("age", mode="before")
+    @classmethod
     def compute_age(cls, v, values):
-        dob_str = values.get("date_of_birth")
+        dob_str = values.data.get("date_of_birth")
         if dob_str:
-            dob = datetime.strptime(dob_str, "%d.%m.%Y")
+            try:
+                dob = datetime.strptime(dob_str, "%d.%m.%Y")
+            except ValueError:
+                # Если дата пришла в формате YYYY-MM-DD, парсим ее
+                dob = datetime.strptime(dob_str, "%Y-%m-%d")
+
             today = datetime.now()
             age = (
                 today.year
@@ -57,7 +60,8 @@ class PatientCreate(BaseModel):
                 - ((today.month, today.day) < (dob.month, dob.day))
             )
             return age
-        raise ValueError("Не удалось вычислить возраст, дата рождения не задана")
+        # Не выбрасываем ошибку, а возвращаем None, если возраст не может быть вычислен
+        return None
 
 
 class DoctorCreate(BaseModel):
@@ -66,13 +70,14 @@ class DoctorCreate(BaseModel):
     patronymic: str
     cabinet: str
     specialization: str
-    date_of_birth: str  # Допустимые форматы: "ДД.ММ.ГГГГ" или "YYYY-MM-DD"
+    date_of_birth: str
     phone: str
     email: EmailStr
-    workplace: str  # Место работы (выбор из нескольких вариантов)
-    age: Optional[int] = None  # Вычисляется автоматически
+    workplace: str
+    age: Optional[int] = None
 
-    @validator("phone")
+    @field_validator("phone")
+    @classmethod
     def validate_phone(cls, value):
         if not phone_regex.match(value):
             raise ValueError(
@@ -80,7 +85,8 @@ class DoctorCreate(BaseModel):
             )
         return value
 
-    @validator("date_of_birth")
+    @field_validator("date_of_birth")
+    @classmethod
     def validate_date_of_birth(cls, value):
         try:
             if "-" in value:
@@ -93,11 +99,16 @@ class DoctorCreate(BaseModel):
             )
         return dob.strftime("%d.%m.%Y")
 
-    @validator("age", always=True)
+    @field_validator("age", mode="before")
+    @classmethod
     def compute_age(cls, v, values):
-        dob_str = values.get("date_of_birth")
+        dob_str = values.data.get("date_of_birth")
         if dob_str:
-            dob = datetime.strptime(dob_str, "%d.%m.%Y")
+            try:
+                dob = datetime.strptime(dob_str, "%d.%m.%Y")
+            except ValueError:
+                dob = datetime.strptime(dob_str, "%Y-%m-%d")
+
             today = datetime.now()
             age = (
                 today.year
@@ -105,13 +116,13 @@ class DoctorCreate(BaseModel):
                 - ((today.month, today.day) < (dob.month, dob.day))
             )
             return age
-        raise ValueError("Не удалось вычислить возраст, дата рождения не задана")
+        return None
 
 
 class AppointmentCreate(BaseModel):
     patient_id: int
     doctor_id: int
-    service: str  # Теперь нужно передавать услугу
+    service: str
     appointment_day: date
     appointment_time: str
 
@@ -129,11 +140,9 @@ class User(UserBase):
     id: int
     is_admin: bool
 
-    class Config:
-        orm_mode = True  # В старых версиях Pydantic, сейчас from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
-# Схема для токена
 class Token(BaseModel):
     access_token: str
     token_type: str
