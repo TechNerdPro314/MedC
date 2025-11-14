@@ -24,9 +24,8 @@ pydantic[email]
 python-multipart
 
 PyMySQL
-
 black
-
 isort 
-
 flake8
+pytest
+httpx
