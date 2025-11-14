@@ -1,0 +1,15 @@
+# Веб-фреймворк и сервер
+fastapi
+uvicorn[standard]
+
+# Работа с базой данных
+SQLAlchemy
+
+# Шаблонизатор для HTML
+Jinja2
+
+# Генерация PDF
+reportlab
+
+# Для работы с .env файлами (понадобится на следующем шаге)
+python-dotenv

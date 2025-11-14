@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
-from routes import (
+from .routes import (
     patient_router, 
     doctor_router, 
     html_router, 
