@@ -1,17 +1,18 @@
 # app/routes/doctor_routes.py
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
-from ..database import SessionLocal, engine
-from ..data.specializations import specializations
 from ..data.cabinets import cabinets
+from ..data.specializations import specializations
+from ..database import SessionLocal, engine
 
 models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
 
 def get_db():
     db = SessionLocal()
@@ -20,17 +21,22 @@ def get_db():
     finally:
         db.close()
 
+
 # HTML-эндпоинты для регистрации врача
 @router.get("/register/doctor", response_class=HTMLResponse)
 def register_doctor_form(request: Request):
     # Возможные места работы
     workplaces = ["Адрес 1", "Адрес 2", "Адрес 3"]
-    return templates.TemplateResponse("register_doctor.html", {
-        "request": request, 
-        "workplaces": workplaces,
-        "specializations": specializations,
-        "cabinets": cabinets
-    })
+    return templates.TemplateResponse(
+        "register_doctor.html",
+        {
+            "request": request,
+            "workplaces": workplaces,
+            "specializations": specializations,
+            "cabinets": cabinets,
+        },
+    )
+
 
 @router.post("/register/doctor", response_class=HTMLResponse)
 def register_doctor(
@@ -44,7 +50,7 @@ def register_doctor(
     phone: str = Form(...),
     email: str = Form(...),
     workplace: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Создаём объект схемы – возраст вычисляется автоматически,
     # дата рождения приводится к формату ДД.ММ.ГГГГ
@@ -57,13 +63,14 @@ def register_doctor(
         date_of_birth=date_of_birth,
         phone=phone,
         email=email,
-        workplace=workplace
+        workplace=workplace,
     )
     db_doctor = models.Doctor(**doctor_data.dict())
     db.add(db_doctor)
     db.commit()
     db.refresh(db_doctor)
     return RedirectResponse(url="/", status_code=302)
+
 
 # API-эндпоинты для работы с врачами
 @router.post("/api/doctors", response_model=schemas.DoctorCreate)
@@ -73,6 +80,7 @@ def create_doctor_api(doctor: schemas.DoctorCreate, db: Session = Depends(get_db
     db.commit()
     db.refresh(db_doctor)
     return doctor
+
 
 @router.get("/api/doctors", response_model=list[schemas.DoctorCreate])
 def read_doctors_api(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):

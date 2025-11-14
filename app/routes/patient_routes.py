@@ -1,5 +1,5 @@
 # app/routes/patient_routes.py
-from fastapi import APIRouter, Depends, Request, Form
+from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -13,6 +13,7 @@ models.Base.metadata.create_all(bind=engine)
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
+
 def get_db():
     db = SessionLocal()
     try:
@@ -20,10 +21,12 @@ def get_db():
     finally:
         db.close()
 
+
 # HTML-эндпоинты для регистрации пациента
 @router.get("/register/patient", response_class=HTMLResponse)
 def register_patient_form(request: Request):
     return templates.TemplateResponse("register_patient.html", {"request": request})
+
 
 @router.post("/register/patient", response_class=HTMLResponse)
 def register_patient(
@@ -37,7 +40,7 @@ def register_patient(
     phone: str = Form(...),
     insurance_policy: str = Form(...),
     email: str = Form(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     # Создаём объект схемы – здесь будет автоматически вычислен возраст и формат даты приведён к ДД.ММ.ГГГГ
     patient_data = schemas.PatientCreate(
@@ -49,13 +52,14 @@ def register_patient(
         address=address,
         phone=phone,
         insurance_policy=insurance_policy,
-        email=email
+        email=email,
     )
     db_patient = models.Patient(**patient_data.dict())
     db.add(db_patient)
     db.commit()
     db.refresh(db_patient)
     return RedirectResponse(url="/", status_code=302)
+
 
 # API-эндпоинты для работы с пациентами
 @router.post("/api/patients", response_model=schemas.PatientCreate)
@@ -65,6 +69,7 @@ def create_patient_api(patient: schemas.PatientCreate, db: Session = Depends(get
     db.commit()
     db.refresh(db_patient)
     return patient
+
 
 @router.get("/api/patients", response_model=list[schemas.PatientCreate])
 def read_patients_api(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):

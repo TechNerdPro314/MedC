@@ -1,26 +1,29 @@
-from fastapi import APIRouter, UploadFile, Form, Request, Depends, HTTPException, File
-from fastapi.responses import RedirectResponse
-from sqlalchemy.orm import Session
+import os
+import shutil
 from datetime import datetime
-import os, shutil
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi.responses import RedirectResponse
+from fastapi.templating import Jinja2Templates
+from sqlalchemy.orm import Session
+
 from app import models
 from app.database import get_db
-from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
 UPLOAD_DIR = "app/static/uploads"
 
+
 @router.get("/patients/{patient_id}/documents")
 def show_documents(patient_id: int, request: Request, db: Session = Depends(get_db)):
     patient = db.query(models.Patient).filter_by(id=patient_id).first()
     documents = db.query(models.PatientDocument).filter_by(patient_id=patient_id).all()
-    return templates.TemplateResponse("patient_documents.html", {
-        "request": request,
-        "patient": patient,
-        "documents": documents
-    })
+    return templates.TemplateResponse(
+        "patient_documents.html",
+        {"request": request, "patient": patient, "documents": documents},
+    )
 
 
 @router.post("/patients/{patient_id}/documents")
@@ -28,7 +31,7 @@ async def upload_document(
     patient_id: int,
     category: str = Form(...),
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     category = category.strip().capitalize()
     category_path = os.path.join(UPLOAD_DIR, str(patient_id), category)
@@ -44,7 +47,7 @@ async def upload_document(
         patient_id=patient_id,
         filename=filename,
         original_name=file.filename,
-        category=category
+        category=category,
     )
     db.add(document)
     db.commit()
@@ -53,7 +56,11 @@ async def upload_document(
 
 @router.post("/patients/{patient_id}/documents/{doc_id}/delete")
 def delete_document(patient_id: int, doc_id: int, db: Session = Depends(get_db)):
-    document = db.query(models.PatientDocument).filter_by(id=doc_id, patient_id=patient_id).first()
+    document = (
+        db.query(models.PatientDocument)
+        .filter_by(id=doc_id, patient_id=patient_id)
+        .first()
+    )
     if not document:
         raise HTTPException(status_code=404, detail="Документ не найден")
 

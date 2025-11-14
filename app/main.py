@@ -1,13 +1,14 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+
 from .routes import (
-    patient_router, 
-    doctor_router, 
-    html_router, 
-    appointment_router, 
-    medication_router, 
+    appointment_router,
     archive_router,
-    document_router
+    doctor_router,
+    document_router,
+    html_router,
+    medication_router,
+    patient_router,
 )
 
 app = FastAPI(title="Медицинская организация")
@@ -22,4 +23,3 @@ app.include_router(appointment_router)
 app.include_router(medication_router)
 app.include_router(archive_router)
 app.include_router(document_router)
-

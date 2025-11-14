@@ -1,14 +1,17 @@
 # app/routes/html_routes.py
-from fastapi import APIRouter, Request, Depends
+from datetime import datetime, timedelta
+
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from datetime import datetime, timedelta
+
 from .. import models
 from ..database import SessionLocal
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
 
 # Функция для получения сессии БД
 def get_db():
@@ -17,6 +20,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # Главная страница с отображением ближайших записей
 @router.get("/", response_class=HTMLResponse)
@@ -27,15 +31,21 @@ def read_index(request: Request, db: Session = Depends(get_db)):
     next_week = today + timedelta(days=7)
 
     # Запрос к БД: получение записей на ближайшие 7 дней
-    upcoming_appointments = db.query(models.Appointment).filter(
-        models.Appointment.appointment_day >= today,
-        models.Appointment.appointment_day <= next_week
-    ).order_by(models.Appointment.appointment_day.asc()).all()
+    upcoming_appointments = (
+        db.query(models.Appointment)
+        .filter(
+            models.Appointment.appointment_day >= today,
+            models.Appointment.appointment_day <= next_week,
+        )
+        .order_by(models.Appointment.appointment_day.asc())
+        .all()
+    )
 
-    return templates.TemplateResponse("index.html", {
-        "request": request,
-        "upcoming_appointments": upcoming_appointments
-    })
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request, "upcoming_appointments": upcoming_appointments},
+    )
+
 
 # Форма для записи на приём
 @router.get("/appointment", response_class=HTMLResponse)

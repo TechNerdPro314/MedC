@@ -1,8 +1,18 @@
 # app/models.py
 
-from sqlalchemy import Column, Integer, String, ForeignKey, Date, DateTime, Text # Добавили Text
-from sqlalchemy.orm import relationship
 from datetime import datetime
+
+from sqlalchemy import (  # Добавили Text
+    Column,
+    Date,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+)
+from sqlalchemy.orm import relationship
+
 from .database import Base
 
 # Рекомендуемые длины для полей
@@ -10,6 +20,7 @@ from .database import Base
 # Телефоны, полисы, статусы: 50
 # Длинные адреса, названия: 255
 # Текстовые описания, рекомендации: Text
+
 
 class Patient(Base):
     __tablename__ = "patients"
@@ -25,6 +36,7 @@ class Patient(Base):
     insurance_policy = Column(String(50), index=True)
     email = Column(String(100), index=True)
 
+
 class Doctor(Base):
     __tablename__ = "doctors"
     id = Column(Integer, primary_key=True, index=True)
@@ -39,6 +51,7 @@ class Doctor(Base):
     email = Column(String(100), index=True)
     workplace = Column(String(255), index=True)
 
+
 class Appointment(Base):
     __tablename__ = "appointments"
     id = Column(Integer, primary_key=True, index=True)
@@ -49,11 +62,12 @@ class Appointment(Base):
     appointment_time = Column(String(50))
     status = Column(String(50), default="Ожидание")
     diagnosis = Column(Text)  # Используем Text для длинных описаний
-    recommendations = Column(Text) # Используем Text для длинных описаний
+    recommendations = Column(Text)  # Используем Text для длинных описаний
 
     patient = relationship("Patient")
     doctor = relationship("Doctor")
     history = relationship("AppointmentHistory", back_populates="appointment")
+
 
 class AppointmentHistory(Base):
     __tablename__ = "appointment_history"
@@ -65,6 +79,7 @@ class AppointmentHistory(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     appointment = relationship("Appointment", back_populates="history")
+
 
 class Medication(Base):
     __tablename__ = "medications"
@@ -78,6 +93,7 @@ class Medication(Base):
     appointment = relationship("Appointment")
     pharmacy_drug = relationship("PharmacyDrug")
 
+
 class PatientDocument(Base):
     __tablename__ = "patient_documents"
     id = Column(Integer, primary_key=True, index=True)
@@ -88,6 +104,7 @@ class PatientDocument(Base):
     upload_date = Column(DateTime, default=datetime.utcnow)
 
     patient = relationship("Patient")
+
 
 class PharmacyDrug(Base):
     __tablename__ = "pharmacy"
